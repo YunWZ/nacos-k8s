@@ -52,5 +52,6 @@ jobs:
             if [ -z "${pkg:-}" ]; then
               break
             fi
+            echo "${pkg}" "oci://ghcr.io/${GITHUB_REPOSITORY_OWNER}/charts"
             helm push "${pkg}" "oci://ghcr.io/${GITHUB_REPOSITORY_OWNER}/charts"
           done
