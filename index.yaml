@@ -1,0 +1,19 @@
+apiVersion: v1
+entries:
+  nacos:
+  - apiVersion: v2
+    appVersion: 3.0.1
+    created: "2025-05-31T04:01:01.775697917Z"
+    description: A Helm chart for Kubernetes
+    digest: 16dd2c5bef6883f799e95ced694592a1ad955a4ccfaec8f5f23da01559e76a80
+    home: https://nacos.io/
+    icon: https://img.alicdn.com/imgextra/i4/O1CN01rW3vAB1FDWKSOiFf0_!!6000000000453-2-tps-204-40.png
+    maintainers:
+    - name: arrowfeng
+    - name: paderlol
+    - name: yunye
+    name: nacos
+    urls:
+    - nacos-1.0.0.tgz
+    version: 1.0.0
+generated: "2025-05-31T04:01:01.775703277Z"
