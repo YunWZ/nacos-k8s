@@ -87,7 +87,3 @@ go.work.sum
 # env file
 .env
 
-### Helm template
-# Chart dependencies
-**/charts/*.tgz
-
