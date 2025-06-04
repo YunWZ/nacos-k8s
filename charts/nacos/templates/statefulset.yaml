@@ -40,6 +40,10 @@ spec:
       {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if and (eq .Values.global.mode "cluster") (.Values.nacos.plugin.enable) }}
+      {{- if .Values.nacos.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.nacos.imagePullSecrets | nindent 8 }}
+      {{- end }}
       initContainers:
         - name: peer-finder-plugin-install
           image: {{.Values.nacos.plugin.image.repository}}:{{.Values.nacos.plugin.image.tag}}
