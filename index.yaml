@@ -3,7 +3,7 @@ entries:
   nacos:
   - apiVersion: v2
     appVersion: 3.0.1
-    created: "2025-06-04T13:58:26.980657996Z"
+    created: "2025-06-05T21:06:56.924125+08:00"
     description: A Helm chart for Kubernetes
     digest: 95006596ca102c44b44be5022c6566b28354c4bbb396bc077c7fdac6e12ab9e1
     home: https://nacos.io/
@@ -18,9 +18,9 @@ entries:
     version: 1.0.1
   - apiVersion: v2
     appVersion: 3.0.1
-    created: "2025-06-03T13:24:19.470784571Z"
+    created: "2025-06-05T21:06:56.923672+08:00"
     description: A Helm chart for Kubernetes
-    digest: b203c15893937a656e5ca1251f9adf2151b8e46de2036041b14c618bcbc09ef8
+    digest: 330e11f825be6945693e6f73e733d186534c6afbfec6a817f4370939eabfc8e9
     home: https://nacos.io/
     icon: https://img.alicdn.com/imgextra/i4/O1CN01rW3vAB1FDWKSOiFf0_!!6000000000453-2-tps-204-40.png
     maintainers:
@@ -31,4 +31,4 @@ entries:
     urls:
     - nacos-1.0.0.tgz
     version: 1.0.0
-generated: "2025-06-04T13:58:26.980666011Z"
+generated: "2025-06-05T21:06:56.922827+08:00"
