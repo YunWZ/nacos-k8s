@@ -28,9 +28,9 @@ nacos:
   serverPort: 8848
   consolePort: 8080
   mcpPort: 9080
-  authToken: nil
-  identityKey: nil
-  identityValue: nil
+  authToken: ""
+  identityKey: ""
+  identityValue: ""
   health:
     enabled: false
   storage:
@@ -101,5 +101,8 @@ tolerations: [ ]
 
 affinity: { }
 
-
+secret:
+  generate: true
+  # name of an existed secret
+  name: nil
 

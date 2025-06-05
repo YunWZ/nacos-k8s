@@ -97,12 +97,39 @@ spec:
               value: {{ .Values.nacos.serverPort | quote }}
             - name: PREFER_HOST_MODE
               value: {{ .Values.nacos.preferHostMode | quote }}
+            {{- if .Values.secret.generate }}
             - name: NACOS_AUTH_TOKEN
-              value: {{ .Values.nacos.authToken | quote }}
+              valueFrom:
+                secretKeyRef:
+                  key: authToken
+                  name: {{ .Release.Name}}
             - name: NACOS_AUTH_IDENTITY_KEY
-              value: {{ .Values.nacos.identityKey | quote }}
+              valueFrom:
+                secretKeyRef:
+                  key: identityKey
+                  name: {{ .Release.Name}}
             - name: NACOS_AUTH_IDENTITY_VALUE
-              value: {{ .Values.nacos.identityValue | quote }}
+              valueFrom:
+                secretKeyRef:
+                  key: identityValue
+                  name: {{ .Release.Name}}
+            {{- else }}
+            - name: NACOS_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: authToken
+                  name: {{ .Values.secret.name}}
+            - name: NACOS_AUTH_IDENTITY_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: identityKey
+                  name: {{ .Values.secret.name}}
+            - name: NACOS_AUTH_IDENTITY_VALUE
+              valueFrom:
+                secretKeyRef:
+                  key: identityValue
+                  name: {{ .Values.secret.name}}
+            {{- end }}
             {{- if eq .Values.global.mode "standalone" }}
             - name: MODE
               value: "standalone"
