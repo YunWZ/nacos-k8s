@@ -17,34 +17,62 @@ If you use a custom database, please initialize the database script yourself fir
 <https://github.com/alibaba/nacos/blob/develop/distribution/conf/nacos-mysql.sql>
 
  
-## Installing the Chart
+## Usage
 
-To install the chart with `release name`:
-
+Add repo:
 ```shell
-$ helm install `release name` ./ 
+helm repo add nacos https://yunwz.github.io/nacos-k8s
+helml repo update
+```
+
+Install nacos application:
+```shell
+$ helm install mynacos nacos/nacos  
 ```
 
 The command deploys Nacos on the Kubernetes cluster in the default configuration. It will run without a mysql chart and persistent volume. The [configuration](#configuration) section lists the parameters that can be configured during installation. 
 
 ### Service & Configuration Management
 
+#### Login to nacos
+
+```shell
+curl -X POST 'http://$NODE_IP:$NODE_PORT/v3/auth/user/login?username={your_username}&password={your_password}'
+```
+
+
+the token will be returned in the response body, like this:
+
+```json
+{"accessToken":"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJuYWNvcyIsImV4cCI6MTc0OTM5MzE1OH0.cHTZzXl9iFHhzLW9TJKFVLt3OxxjcwPBOyd73jI6h-M","tokenTtl":18000,"globalAdmin":true,"username":"nacos"}
+```
+
+Also, you can export the token to environment variable
+```shell
+export accessToken=$(curl -X POST "http://$NODE_IP:$NODE_PORT/v3/auth/user/login?username={your_username}&password={your_password}"|jq -r .accessToken)
+```
+
+Check the token is  valid:
+```shell
+echo $accessToken
+```
+
 #### Service registration
 ```shell
-curl -X POST 'http://$NODE_IP:$NODE_PORT/nacos/v1/ns/instance?serviceName=nacos.naming.serviceName&ip=20.18.7.10&port=8080'
+curl -X POST "http://$NODE_IP:$CLIENT_HTTP_NODE_PORT/nacos/v3/client/ns/instance?serviceName=nacos.naming.serviceName&ip=20.18.7.10&port=8080" --header "accessToken: $accessToken"
 ```
 
 #### Service discovery
 ```shell
-curl -X GET 'http://$NODE_IP:$NODE_PORT/nacos/v1/ns/instance/list?serviceName=nacos.naming.serviceName'
+curl -X GET "http://$NODE_IP:$CLIENT_HTTP_NODE_PORT/nacos/v3/client/ns/instance/list?serviceName=nacos.naming.serviceName" --header "accessToken: $accessToken"
 ```
 #### Publish config
 ```shell
-curl -X POST "http://$NODE_IP:$NODE_PORT/nacos/v1/cs/configs?dataId=nacos.cfg.dataId&group=test&content=helloWorld"
+curl -X POST "http://$NODE_IP:$NODE_PORT/v3/console/cs/config?dataId=nacos.cfg.dataId&groupName=test&content=helloWorld" --header "accessToken: $accessToken"
 ```
 #### Get config
 ```shell
-curl -X GET "http://$NODE_IP:$NODE_PORT/nacos/v1/cs/configs?dataId=nacos.cfg.dataId&group=test"
+curl -X GET "http://$NODE_IP:$NODE_PORT/v3/console/cs/config?dataId=nacos.cfg.dataId&groupName=test" --header "accessToken: $accessToken"
 ```
 
 
@@ -53,10 +81,10 @@ curl -X GET "http://$NODE_IP:$NODE_PORT/nacos/v1/cs/configs?dataId=nacos.cfg.dat
 
 ## Uninstalling the Chart
 
-To uninstall/delete `release name`:
+To uninstall/delete nacos application:
 
 ```shell
-$ helm uninstall `release name`
+$ helm uninstall mynacos
 ```
 The command removes all the Kubernetes components associated with the chart and deletes the release.
 
@@ -73,9 +101,9 @@ The following table lists the configurable parameters of the Skywalking chart an
 | `tolerations`                                   | Nacos tolerations                                                                                          | `{}`                                                                                                                                       |
 | `resources.requests.cpu`                        | nacos requests cpu resource                                                                                | `500m`                                                                                                                                     |
 | `resources.requests.memory`                     | nacos requests memory resource                                                                             | `2G`                                                                                                                                       |
-| `nacos.replicaCount`                            | Number of desired nacos pods, the number should be 1 as run standalone mode                                | `1`                                                                                                                                        |
+| `nacos.replicaCount`                            | Number of desired nacos pods. If run in standalone mode,the replicaCount is not working                    | `3`                                                                                                                                        |
 | `nacos.image.repository`                        | Nacos container image name                                                                                 | `nacos/nacos-server`                                                                                                                       |
-| `nacos.image.tag`                               | Nacos container image tag                                                                                  | `latest`                                                                                                                                   |
+| `nacos.image.tag`                               | Nacos container image tag                                                                                  | `v3.0.1`                                                                                                                                   |
 | `nacos.image.pullPolicy`                        | Nacos container image pull policy                                                                          | `IfNotPresent`                                                                                                                             |
 | `nacos.plugin.enable`                           | Nacos cluster plugin that is auto scale                                                                    | `true`                                                                                                                                     |
 | `nacos.plugin.image.repository`                 | Nacos cluster plugin image name                                                                            | `nacos/nacos-peer-finder-plugin`                                                                                                           |
@@ -113,13 +141,13 @@ The following table lists the configurable parameters of the Skywalking chart an
 ![img](../../images/nacos.png)
 #### standalone mode(with embedded)
 ```console
-$ helm install `release name` ./ --set global.mode=standalone
+$ helm install mynacos nacos/nacos
 ```
 ![img](../../images/quickstart.png)
 
 #### standalone mode(with mysql)
 ```console
-$ helm install `release name` ./ --set global.mode=standalone --set nacos.storage.db.host=host --set nacos.storage.
+$ helm install mynacos nacos/nacos --set nacos.storage.db.host=host --set nacos.storage.
 db.name=dbName --set nacos.storage.db.port=port --set nacos.storage.db.username=username  --set nacos.storage.db.
 password=password
 ```
@@ -130,7 +158,7 @@ password=password
 
 #### cluster mode(without pv)
 ```console
-$ helm install `release name` ./ --set global.mode=cluster
+$ helm install mynacos nacos/nacos --set global.mode=cluster
 ```
 ![img](../../images/cluster1.png)
 
