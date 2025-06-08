@@ -1,0 +1,29 @@
+permissions: {}
+
+on:
+  push:
+    branches:
+      - 'master'
+    paths:
+      - 'charts/README.md'
+
+jobs:
+  build:
+    permissions:
+      contents: write # for git push
+      pages: write
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: |
+          cp -f charts/README.md ${{ runner.temp }}/README.md
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: gh-pages
+      - run: |
+          cp -f ${{ runner.temp }}/README.md .
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git add README.md
+          git commit --signoff -m "Sync README from master chart/README.md"
+          git push
