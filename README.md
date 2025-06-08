@@ -103,7 +103,7 @@ The following table lists the configurable parameters of the Skywalking chart an
 | `resources.requests.memory`                     | nacos requests memory resource                                                                             | `2G`                                                                                                                                       |
 | `nacos.replicaCount`                            | Number of desired nacos pods. If run in standalone mode,the replicaCount is not working                    | `3`                                                                                                                                        |
 | `nacos.image.repository`                        | Nacos container image name                                                                                 | `nacos/nacos-server`                                                                                                                       |
-| `nacos.image.tag`                               | Nacos container image tag                                                                                  | `latest`                                                                                                                                   |
+| `nacos.image.tag`                               | Nacos container image tag                                                                                  | `v3.0.1`                                                                                                                                   |
 | `nacos.image.pullPolicy`                        | Nacos container image pull policy                                                                          | `IfNotPresent`                                                                                                                             |
 | `nacos.plugin.enable`                           | Nacos cluster plugin that is auto scale                                                                    | `true`                                                                                                                                     |
 | `nacos.plugin.image.repository`                 | Nacos cluster plugin image name                                                                            | `nacos/nacos-peer-finder-plugin`                                                                                                           |
@@ -141,13 +141,13 @@ The following table lists the configurable parameters of the Skywalking chart an
 ![img](../../images/nacos.png)
 #### standalone mode(with embedded)
 ```console
-$ helm install `release name` ./ --set global.mode=standalone
+$ helm install mynacos nacos/nacos
 ```
 ![img](../../images/quickstart.png)
 
 #### standalone mode(with mysql)
 ```console
-$ helm install `release name` ./ --set global.mode=standalone --set nacos.storage.db.host=host --set nacos.storage.
+$ helm install mynacos nacos/nacos --set nacos.storage.db.host=host --set nacos.storage.
 db.name=dbName --set nacos.storage.db.port=port --set nacos.storage.db.username=username  --set nacos.storage.db.
 password=password
 ```
@@ -158,7 +158,7 @@ password=password
 
 #### cluster mode(without pv)
 ```console
-$ helm install `release name` ./ --set global.mode=cluster
+$ helm install mynacos nacos/nacos --set global.mode=cluster
 ```
 ![img](../../images/cluster1.png)
 
