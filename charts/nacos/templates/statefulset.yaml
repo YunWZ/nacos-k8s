@@ -11,7 +11,11 @@ spec:
   {{- else }}
   serviceName: nacos-cs
   {{- end }}
+  {{- if eq .Values.global.mode "standalone"}}
+  replicas: 1
+  {{- else }}
   replicas: {{ .Values.nacos.replicaCount }}
+  {{- end}}
   {{- if .Values.nacos.podManagementPolicy }}
   podManagementPolicy: {{ .Values.nacos.podManagementPolicy }}
   {{- else}}

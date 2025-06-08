@@ -22,5 +22,5 @@
   kubectl port-forward $POD_NAME 8080:80
 {{- end }}
 2. MODE:
-   standalone: you need to modify replicaCount in the values.yaml, .Values.replicaCount=1
-   cluster: kubectl scale sts {{ .Release.Namespace }}-nacos --replicas=3
+   standalone: you need to modify global.mode=standalone
+   cluster: you need to modify global.mode=standalone and set nacos.replicaCount equals or more than 3.
