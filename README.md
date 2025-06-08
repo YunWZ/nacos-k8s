@@ -1,320 +1,172 @@
-# Kubernetes Nacos
+# Nacos Helm Chart
 
+Nacos is committed to help you discover, configure, and manage your microservices. It provides a set of simple and useful features enabling you to realize dynamic service discovery, service configuration, service metadata and traffic management.
 
-This project contains a Nacos Docker image meant to facilitate the deployment of [Nacos](https://nacos.io) on [Kubernetes](https://kubernetes.io/) via StatefulSets.
+## Introduction
 
-[中文文档](https://github.com/nacos-group/nacos-k8s/blob/master/README-CN.md)
+This project is based on the Helm Chart packaged by [nacos-k8s](https://github.com/nacos-group/nacos-k8s/).
 
-# Tips
-If you are using **Nacos** version 1.1.4 or lower,, please refer to this [Tag](https://github.com/nacos-group/nacos-k8s/tree/v1.1.4)
+## Prerequisites
 
-It is recommended to deploy Nacos in Kubernetes using [Nacos Operator](operator/README.md).
-
-# Quick Start
-
-* **Clone Project**
-
-
-```shell
-git clone https://github.com/nacos-group/nacos-k8s.git
-```
-
-
-
-* **Simple Start**
-
-> If you want to start Nacos without NFS, but **emptyDirs will possibly result in a loss of data**. as follows:
-
-```shell
-cd nacos-k8s
-chmod +x quick-startup.sh
-./quick-startup.sh
-```
-
-
-
-* **Testing**
-
-  * **Service registration**
-
-  ```powershell
-  curl -X PUT 'http://cluster-ip:8848/nacos/v1/ns/instance?serviceName=nacos.naming.serviceName&ip=20.18.7.10&port=8080'
-  ```
-
-
-
-  * **Service discovery**
-
-  ```powershell
-  curl -X GET 'http://cluster-ip:8848/nacos/v1/ns/instance/list?serviceName=nacos.naming.serviceName'
-  ```
-
-
-
-  * **Publish config**
-
-  ```powershell
-  curl -X POST "http://cluster-ip:8848/nacos/v1/cs/configs?dataId=nacos.cfg.dataId&group=test&content=helloWorld"
-  ```
-
-
-
-  * **Get config**
-
-  ```powershell
-  curl -X GET "http://cluster-ip:8848/nacos/v1/cs/configs?dataId=nacos.cfg.dataId&group=test"
-  ```
-
-
-
-
-# Advanced
+ - Kubernetes 1.10+ 
+ - Helm v3 
+ - PV provisioner support in the underlying infrastructure
 
 ## Tips
 If you use a custom database, please initialize the database script yourself first.
-<https://github.com/alibaba/nacos/blob/develop/distribution/conf/mysql-schema.sql>
+<https://github.com/alibaba/nacos/blob/develop/distribution/conf/nacos-mysql.sql>
 
+ 
+## Usage
 
-> In advanced use, the cluster is automatically scaled and data is persisted, but [PersistentVolumeClaims](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) must be deployed. In this example, NFS is used.
->
+Add repo:
+```shell
+helm repo add nacos https://yunwz.github.io/nacos-k8s
+helml repo update
+```
 
+Install nacos application:
+```shell
+$ helm install mynacos nacos/nacos  
+```
 
+The command deploys Nacos on the Kubernetes cluster in the default configuration. It will run without a mysql chart and persistent volume. The [configuration](#configuration) section lists the parameters that can be configured during installation. 
 
-## Deploy NFS
+### Service & Configuration Management
 
-* Create Role 
+#### Login to nacos
 
 ```shell
-kubectl create -f deploy/nfs/rbac.yaml
+curl -X POST 'http://$NODE_IP:$NODE_PORT/v3/auth/user/login?username={your_username}&password={your_password}'
 ```
 
-> If your K8S namespace is not default, execute the following script before creating RBAC
 
+the token will be returned in the response body, like this:
+
+```json
+{"accessToken":"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJuYWNvcyIsImV4cCI6MTc0OTM5MzE1OH0.cHTZzXl9iFHhzLW9TJKFVLt3OxxjcwPBOyd73jI6h-M","tokenTtl":18000,"globalAdmin":true,"username":"nacos"}
+```
+
+Also, you can export the token to environment variable
+```shell
+export accessToken=$(curl -X POST "http://$NODE_IP:$NODE_PORT/v3/auth/user/login?username={your_username}&password={your_password}"|jq -r .accessToken)
+```
+
+Check the token is  valid:
+```shell
+echo $accessToken
+```
+
+#### Service registration
+```shell
+curl -X POST "http://$NODE_IP:$CLIENT_HTTP_NODE_PORT/nacos/v3/client/ns/instance?serviceName=nacos.naming.serviceName&ip=20.18.7.10&port=8080" --header "accessToken: $accessToken"
+```
+
+#### Service discovery
+```shell
+curl -X GET "http://$NODE_IP:$CLIENT_HTTP_NODE_PORT/nacos/v3/client/ns/instance/list?serviceName=nacos.naming.serviceName" --header "accessToken: $accessToken"
+```
+#### Publish config
+```shell
+curl -X POST "http://$NODE_IP:$NODE_PORT/v3/console/cs/config?dataId=nacos.cfg.dataId&groupName=test&content=helloWorld" --header "accessToken: $accessToken"
+```
+#### Get config
+```shell
+curl -X GET "http://$NODE_IP:$NODE_PORT/v3/console/cs/config?dataId=nacos.cfg.dataId&groupName=test" --header "accessToken: $accessToken"
+```
+
+
+
+> **Tip**: List all releases using `helm list`
+
+## Uninstalling the Chart
+
+To uninstall/delete nacos application:
 
 ```shell
-# Set the subject of the RBAC objects to the current namespace where the provisioner is being deployed
-$ NS=$(kubectl config get-contexts|grep -e "^\*" |awk '{print $5}')
-$ NAMESPACE=${NS:-default}
-$ sed -i "s/namespace:.*/namespace: $NAMESPACE/g" ./deploy/nfs/rbac.yaml
-
+$ helm uninstall mynacos
 ```
+The command removes all the Kubernetes components associated with the chart and deletes the release.
+
+## Configuration
+
+The following table lists the configurable parameters of the Skywalking chart and their default values.
+
+| Parameter                                       | Description                                                                                                | Default                                                                                                                                    |
+|-------------------------------------------------|------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `global.mode`                                   | Run Mode (~~quickstart,~~ standalone, cluster; )                                                           | `standalone`                                                                                                                               |
+| `resources`                                     | The [resources] to allocate for nacos container                                                            | `{}`                                                                                                                                       |
+| `nodeSelector`                                  | Nacos labels for pod assignment                                                                            | `{}`                                                                                                                                       |
+| `affinity`                                      | Nacos affinity policy                                                                                      | `{}`                                                                                                                                       |
+| `tolerations`                                   | Nacos tolerations                                                                                          | `{}`                                                                                                                                       |
+| `resources.requests.cpu`                        | nacos requests cpu resource                                                                                | `500m`                                                                                                                                     |
+| `resources.requests.memory`                     | nacos requests memory resource                                                                             | `2G`                                                                                                                                       |
+| `nacos.replicaCount`                            | Number of desired nacos pods, the number should be 1 as run standalone mode                                | `1`                                                                                                                                        |
+| `nacos.image.repository`                        | Nacos container image name                                                                                 | `nacos/nacos-server`                                                                                                                       |
+| `nacos.image.tag`                               | Nacos container image tag                                                                                  | `latest`                                                                                                                                   |
+| `nacos.image.pullPolicy`                        | Nacos container image pull policy                                                                          | `IfNotPresent`                                                                                                                             |
+| `nacos.plugin.enable`                           | Nacos cluster plugin that is auto scale                                                                    | `true`                                                                                                                                     |
+| `nacos.plugin.image.repository`                 | Nacos cluster plugin image name                                                                            | `nacos/nacos-peer-finder-plugin`                                                                                                           |
+| `nacos.plugin.image.tag`                        | Nacos cluster plugin image tag                                                                             | `1.1`                                                                                                                                      |
+| `nacos.health.enabled`                          | Enable health check or not                                                                                 | `false`                                                                                                                                    |
+| `nacos.preferHostMode`                          | Enable Nacos cluster node domain name support                                                              | `hostname`                                                                                                                                 |
+| `nacos.serverPort`                              | Nacos pod's port                                                                                           | `8848`                                                                                                                                     |
+| `nacos.consolePort`                             | Nacos console main port                                                                                    | `8080`                                                                                                                                     |
+| `nacos.mcpPort`                                 | Nacos mcp registry port                                                                                    | `9080`                                                                                                                                     |
+| `nacos.authToken`                               | Nacos auth plugin token secret key                                                                         | if empty, will use a random string                                                                                                         |
+| `nacos.identityKey`                             | Nacos auth server identity key                                                                             | if empty, will use a random string                                                                                                         |
+| `nacos.identityValue`                           | Nacos auth server identity value                                                                           | if empty, will use a random string                                                                                                         |
+| `nacos.storage.type`                            | Nacos data storage method `mysql` or `embedded`. The `embedded` supports either standalone or cluster mode | `embedded`                                                                                                                                 |
+| `nacos.storage.db.host`                         | mysql  host                                                                                                |                                                                                                                                            |
+| `nacos.storage.db.name`                         | mysql  database name                                                                                       |                                                                                                                                            |
+| `nacos.storage.db.port`                         | mysql port                                                                                                 | 3306                                                                                                                                       |
+| `nacos.storage.db.username`                     | username of  database                                                                                      |                                                                                                                                            |
+| `nacos.storage.db.password`                     | password of  database                                                                                      |                                                                                                                                            |
+| `nacos.storage.db.param`                        | Database url parameter                                                                                     | `characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false`                                            |
+| `persistence.enabled`                           | Enable the nacos data persistence or not                                                                   | `false`                                                                                                                                    |
+| `persistence.data.accessModes`					             | Nacos data pvc access mode										                                                                       | `ReadWriteOnce`		                                                                                                                          |
+| `persistence.data.storageClassName`				         | Nacos data pvc storage class name									                                                                 | `manual`			                                                                                                                                |
+| `persistence.data.resources.requests.storage`		 | Nacos data pvc requests storage									                                                                   | `5G`					                                                                                                                                  |
+| `service.type`									                         | http service type													                                                                             | `NodePort`			                                                                                                                              |
+| `service.port`									                         | http service port													                                                                             | `8848`				                                                                                                                                 |
+| `service.nodePort`								                      | http service nodeport												                                                                          | `30000`				                                                                                                                                |
+| `ingress.enabled`									                      | Enable ingress or not												                                                                          | `false`				                                                                                                                                |
+| `ingress.annotations`								                   | The annotations used in ingress									                                                                   | `{}`					                                                                                                                                  |
+| `ingress.hosts`									                        | The host of nacos service in ingress rule							                                                           | `nacos.example.com`	                                                                                                                       |
+| `secret.generate`                               | if  true, will generate a random string for nacos identity key and value and auth token                    | true                                                                                                                                       |
+| `secret.name`                                   |                                                                                                            | if `secret.generate` is false, you can set an existed secret name. The secret must contains `authToken`, `identityKey` and `identityValue` | empty
 
 
-
-* Create `ServiceAccount` And deploy `NFS-Client Provisioner`
-
-```shell
-kubectl create -f deploy/nfs/deployment.yaml
+## Example
+![img](../../images/nacos.png)
+#### standalone mode(with embedded)
+```console
+$ helm install `release name` ./ --set global.mode=standalone
 ```
+![img](../../images/quickstart.png)
 
-
-
-* Create NFS StorageClass
-
-```shell
-kubectl create -f deploy/nfs/class.yaml
+#### standalone mode(with mysql)
+```console
+$ helm install `release name` ./ --set global.mode=standalone --set nacos.storage.db.host=host --set nacos.storage.
+db.name=dbName --set nacos.storage.db.port=port --set nacos.storage.db.username=username  --set nacos.storage.db.
+password=password
 ```
+![img](../../images/standalone.png)
 
 
+> **Tip**: if the logs of nacos pod throws exception, you may need to delete the pod. Because mysql pod is not ready, nacos pod has been started.
 
-* Verify that NFS is working
-
-```shell
-kubectl get pod -l app=nfs-client-provisioner
+#### cluster mode(without pv)
+```console
+$ helm install `release name` ./ --set global.mode=cluster
 ```
+![img](../../images/cluster1.png)
 
-
-
-## Deploy database
-
-
-* Deploy mysql
-
-```shell
-
-cd nacos-k8s
-
-kubectl create -f deploy/mysql/mysql-nfs.yaml
+```console
+$ kubectl scale sts `release name`-nacos --replicas=3
 ```
-
-
-
-
-
-
-
-* Verify that Database is working
-
-```shell
-
-kubectl get pod 
-NAME                         READY   STATUS    RESTARTS   AGE
-mysql-gf2vd                        1/1     Running   0          111m
-
-```
-
-
-
-## Deploy Nacos 
-
-
-
-
-
-* Modify  **deploy/nacos/nacos-pvc-nfs.yaml**
-
-```yaml
-data:
-  mysql.host: "db host"
-  mysql.db.name: "db name"
-  mysql.port: " db port"
-  mysql.user: " db username"
-  mysql.password: " db password"
-```
-
-
-
-* Create Nacos
-
-``` shell
-kubectl create -f nacos-k8s/deploy/nacos/nacos-pvc-nfs.yaml
-```
-
-
-
-* Verify that Nacos is working
-
-```shell
-kubectl get pod -l app=nacos
-
-
-NAME      READY   STATUS    RESTARTS   AGE
-nacos-0   1/1     Running   0          19h
-nacos-1   1/1     Running   0          19h
-nacos-2   1/1     Running   0          19h
-```
-
-
-
-
-
-## Scale Testing
-
-* Use [`kubectl exec`](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#exec) to get the cluster config of the Pods in the `nacos` StatefulSet.
-
-```powershell
-for i in 0 1; do echo nacos-$i; kubectl exec nacos-$i cat conf/cluster.conf; done
-```
-
-The StatefulSet controller provides each Pod with a unique hostname based on its ordinal index. The hostnames take the form of `<statefulset name>-<ordinal index>`. Because the `replicas` field of the `nacos` StatefulSet is set to `2`, In the cluster file only two nacos address
-
-
-
-![k8s](/images/k8s.gif)
-
-
-
-* Use kubectl to scale StatefulSets
-
-```bash
-kubectl scale sts nacos --replicas=3
-```
-
-![scale](/images/scale.gif)
-
-
-
-* Use [`kubectl exec`](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#exec) to get the cluster config of the Pods in the `nacos` StatefulSet after scale StatefulSets
-
-```bash
-for i in 0 1 2; do echo nacos-$i; kubectl exec nacos-$i cat conf/cluster.conf; done
-```
-
-![get_cluster_after](/images/get_cluster_after.gif)
-
-
-
-* Use [`kubectl exec`](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#exec) to get the **state** of the Pods in the `nacos` StatefulSet after scale StatefulSets
-
-```bash
-for i in 0 1 2; do echo nacos-$i; kubectl exec nacos-$i curl GET "http://localhost:8848/nacos/v1/ns/raft/state"; done
-```
-
-You can find that the new node has joined the cluster
-
-# Prerequisites
-
-- Kubernetes Node configuration(for reference only)
-
-| Hostname   | Configuration                                                                    |
-| ---------- | -------------------------------------------------------------------------------- |                    
-| k8s-master | CentOS Linux release 7.4.1708 (Core) Single-core processor Mem 4G Cloud disk 40G |
-| node01     | CentOS Linux release 7.4.1708 (Core) Single-core processor Mem 4G Cloud disk 40G |
-| node02     | CentOS Linux release 7.4.1708 (Core) Single-core processor Mem 4G Cloud disk 40G |
-
-- Kubernetes version：**1.12.2+** 
-- NFS version：**4.1+** 
-
-
-
-
-# Limitations
-
-* Persistent Volumes must be used. emptyDirs will possibly result in a loss of data
-
-
-
-
-
-# Project directory
-
-| Directory Name   | Description                                |
-| ------ | ----------------------------------- |
-| plugin | Help Nacos cluster achieve automatic scaling in K8s |
-| deploy | Deploy the required files                     |
-
-
-
-# Configuration properties
-
-* nacos-pvc-nfs.yaml or nacos-quick-start.yaml 
-
-| Name                  | Required | Description                                    |
-| --------------------- | -------- | --------------------------------------- |
-| mysql.db.name  | Y       | database name                          |
-| mysql.port     | N       | database port                          |
-| mysql.user     | Y       | database username                        |
-| mysql.password | Y       | database password                       |
-| SPRING_DATASOURCE_PLATFORM | Y       | Database type,The default is embedded database,parameters only support mysql or embedded                       |
-| NACOS_REPLICAS        | Y       | The number of clusters must be consistent with the value of the replicas attribute |
-| NACOS_SERVER_PORT     | N       | Nacos port,default:8848 for Peer-finder plugin               |
-| NACOS_APPLICATION_PORT     | N       | Nacos port， default:8848           |
-| PREFER_HOST_MODE      | Y       | Enable Nacos cluster node domain name support               |
-
-
-
-* **nfs** deployment.yaml 
-
-| Name       | Required | Description                     |
-| ---------- | -------- | ------------------------ |
-| NFS_SERVER | Y       | NFS server address           |
-| NFS_PATH   | Y       | NFS server shared directory |
-| server     | Y       | NFS server address           |
-| path       | Y       | NFS server shared directory |
-
-
-
-* mysql yaml 
-
-| Name                       | Required | Description                                                        |
-| -------------------------- | -------- | ----------------------------------------------------------- |
-| MYSQL_ROOT_PASSWORD        | N       | Root password                                                    |
-| MYSQL_DATABASE             | Y       | Database Name                                     |
-| MYSQL_USER                 | Y       | Database Username                                     |
-| MYSQL_PASSWORD             | Y       | Database Password                                |
-| Nfs:server                 | Y       | NFS server address |
-| Nfs:path                   | Y       | NFS server shared path |
-
-
-
-
+![img](../../images/cluster2.png)
+
+ * Use kubectl exec to get the cluster config of the Pods in the nacos StatefulSet after scale StatefulSets
+ 
+![img](../../images/cluster3.png)
